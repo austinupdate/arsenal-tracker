@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arsenal Tracker</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg: #0f1419;
+  --surface: #1a2332;
+  --surface-hover: #243044;
+  --surface-active: #2d3f54;
+  --border: #2d3f54;
+  --border-light: rgba(45,63,84,0.5);
+  --text: #e8edf3;
+  --text-secondary: #8899aa;
+  --text-muted: #5c6d7e;
+  --accent: #c9a52c;
+  --accent-dim: rgba(201,165,44,0.15);
+  --accent-hover: #dbb833;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh;
+}
+
+/* Nav */
+.nav {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-brand { display: flex; align-items: center; gap: 12px; }
+.nav-brand i { color: var(--accent); font-size: 22px; }
+.nav-brand h1 { font-size: 18px; font-weight: 700; }
+.nav-brand span { color: var(--text-muted); font-size: 12px; }
+.nav-tabs { display: flex; gap: 4px; }
+.nav-tab {
+  padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); cursor: pointer; border: none; background: none;
+  transition: all 0.15s ease;
+}
+.nav-tab:hover { background: var(--surface-hover); color: var(--text); }
+.nav-tab.active { background: var(--accent-dim); color: var(--accent); }
+
+/* Main */
+.main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+/* Views */
+.view { display: none; }
+.view.active { display: block; }
+
+/* KPI */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; position: relative; overflow: hidden;
+}
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.kpi-card.gold::before { background: var(--accent); }
+.kpi-card.blue::before { background: var(--info); }
+.kpi-card.green::before { background: var(--success); }
+.kpi-card.red::before { background: var(--danger); }
+.kpi-icon {
+  width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; margin-bottom: 12px; font-size: 16px;
+}
+.kpi-card.gold .kpi-icon { background: var(--accent-dim); color: var(--accent); }
+.kpi-card.blue .kpi-icon { background: rgba(96,165,250,0.15); color: var(--info); }
+.kpi-card.green .kpi-icon { background: rgba(74,222,128,0.15); color: var(--success); }
+.kpi-card.red .kpi-icon { background: rgba(248,113,113,0.15); color: var(--danger); }
+.kpi-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.kpi-value { font-size: 28px; font-weight: 700; font-family: 'SF Mono', monospace; margin-top: 4px; }
+.kpi-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Cards */
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 16px;
+}
+.card-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-header h2 { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.card-header h2 i { color: var(--text-muted); }
+.card-body { padding: 16px 20px; }
+
+/* Grid layouts */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left; color: var(--text-muted); font-weight: 500; padding: 8px 12px;
+  border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+td { padding: 10px 12px; border-bottom: 1px solid var(--border-light); }
+tr:hover td { background: var(--surface-hover); }
+tr:last-child td { border-bottom: none; }
+
+/* Badges */
+.badge {
+  display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 500;
+}
+.badge-green { background: rgba(74,222,128,0.15); color: var(--success); }
+.badge-yellow { background: rgba(251,191,36,0.15); color: var(--warning); }
+.badge-red { background: rgba(248,113,113,0.15); color: var(--danger); }
+.badge-blue { background: rgba(96,165,250,0.15); color: var(--info); }
+.badge-gray { background: rgba(92,109,126,0.15); color: var(--text-secondary); }
+
+/* Ammo bars */
+.ammo-row { padding: 10px 0; border-bottom: 1px solid var(--border-light); }
+.ammo-row:last-child { border-bottom: none; }
+.ammo-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.ammo-row-top span:first-child { font-size: 13px; font-weight: 500; }
+.ammo-row-top span:last-child { font-size: 12px; color: var(--text-secondary); font-family: monospace; }
+.ammo-bar { height: 6px; background: rgba(45,63,84,0.5); border-radius: 3px; overflow: hidden; }
+.ammo-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+
+/* Buttons */
+.btn {
+  padding: 8px 14px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); background: var(--surface-hover); color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary {
+  background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-danger { border-color: var(--danger); color: var(--danger); }
+.btn-danger:hover { background: rgba(248,113,113,0.1); }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 1000; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px; width: 500px; max-width: 90vw; max-height: 85vh; overflow-y: auto;
+}
+.modal h2 { font-size: 16px; margin-bottom: 16px; }
+.modal label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; margin-top: 12px; }
+.modal input, .modal select, .modal textarea {
+  width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit;
+}
+.modal textarea { min-height: 60px; resize: vertical; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+/* Activity */
+.activity-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-light); }
+.activity-item:last-child { border-bottom: none; }
+.activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+.activity-dot.range { background: var(--info); }
+.activity-dot.purchase { background: var(--success); }
+.activity-dot.maintenance { background: var(--warning); }
+.activity-text { font-size: 13px; }
+.activity-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* NFA */
+.nfa-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-light); }
+.nfa-item:last-child { border-bottom: none; }
+.nfa-info h3 { font-size: 13px; font-weight: 500; }
+.nfa-info p { font-size: 11px; color: var(--text-muted); }
+.nfa-days { font-size: 22px; font-weight: 700; color: var(--warning); font-family: monospace; }
+.nfa-days-label { font-size: 10px; color: var(--text-muted); text-align: right; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+  .nav-tabs { display: none; }
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .main { padding: 12px; }
+}
+
+/* Footer */
+.footer { text-align: center; padding: 24px; color: var(--text-muted); font-size: 11px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <i class="fa-solid fa-crosshairs"></i>
+    <h1>Arsenal Tracker <span>v1.0</span></h1>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchView('dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="switchView('firearms')">Firearms</button>
+    <button class="nav-tab" onclick="switchView('ammo')">Ammunition</button>
+    <button class="nav-tab" onclick="switchView('range')">Range Log</button>
+    <button class="nav-tab" onclick="switchView('nfa')">NFA / Docs</button>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="btn" onclick="exportData()"><i class="fa-solid fa-download"></i> Export</button>
+    <button class="btn" onclick="document.getElementById('importFile').click()"><i class="fa-solid fa-upload"></i> Import</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- ==================== DASHBOARD VIEW ==================== -->
+<div class="view active" id="view-dashboard">
+  <div class="kpi-grid" id="kpi-cards"></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-gun"></i> Collection</h2>
+        <button class="btn" onclick="switchView('firearms')">View All</button>
+      </div>
+      <div class="card-body" style="padding:0;" id="dash-firearms"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-boxes-stacked"></i> Ammo Status</h2>
+        <button class="btn" onclick="switchView('ammo')">View All</button>
+      </div>
+      <div class="card-body" id="dash-ammo"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</h2>
+      </div>
+      <div class="card-body" id="dash-activity"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-triangle-exclamation"></i> Low Stock Alerts</h2>
+      </div>
+      <div class="card-body" style="padding:0;" id="dash-alerts"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FIREARMS VIEW ==================== -->
+<div class="view" id="view-firearms">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h2 style="font-size:18px;"><i class="fa-solid fa-gun" style="color:var(--accent);margin-right:8px;"></i>Firearms Inventory</h2>
+    <button class="btn btn-primary" onclick="openModal('firearm')"><i class="fa-solid fa-plus"></i> Add Firearm</button>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;" id="firearms-table"></div></div>
+</div>
+
+<!-- ==================== AMMO VIEW ==================== -->
+<div class="view" id="view-ammo">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h2 style="font-size:18px;"><i class="fa-solid fa-boxes-stacked" style="color:var(--info);margin-right:8px;"></i>Ammunition Inventory</h2>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="openModal('ammo')"><i class="fa-solid fa-plus"></i> Add Caliber</button>
+      <button class="btn" onclick="openModal('ammo-use')"><i class="fa-solid fa-arrow-down"></i> Log Use</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;" id="ammo-table"></div></div>
+</div>
+
+<!-- ==================== RANGE VIEW ==================== -->
+<div class="view" id="view-range">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h2 style="font-size:18px;"><i class="fa-solid fa-bullseye" style="color:var(--success);margin-right:8px;"></i>Range Log</h2>
+    <button class="btn btn-primary" onclick="openModal('session')"><i class="fa-solid fa-plus"></i> Log Session</button>
+  </div>
+  <div class="card"><div class="card-body" style="padding:0;" id="range-table"></div></div>
+</div>
+
+<!-- ==================== NFA VIEW ==================== -->
+<div class="view" id="view-nfa">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h2 style="font-size:18px;"><i class="fa-solid fa-stamp" style="color:var(--warning);margin-right:8px;"></i>NFA Items & Documents</h2>
+    <button class="btn btn-primary" onclick="openModal('nfa')"><i class="fa-solid fa-plus"></i> Add NFA Item</button>
+  </div>
+  <div class="card"><div class="card-body" id="nfa-list"></div></div>
+</div>
+
+</main>
+
+<div class="footer">
+  <i class="fa-solid fa-lock"></i> All data stored locally (localStorage) · No cloud · No subscription · No blockchain<br>
+  <span>Arsenal Tracker v1.0 · Built by Kendrick</span>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content" onclick="event.stopPropagation()"></div>
+</div>
+
+<script>
+// ========== DATA LAYER ==========
+const DEFAULT_DATA = {"firearms": [{"id": 1, "name": "Walther P22", "manufacturer": "Walther", "type": "Handgun", "caliber": ".22 LR", "serial": "N002922", "purchaseDate": "", "purchasePrice": 0, "purchasedFrom": "Gifted", "condition": "New", "roundCount": 100, "status": "active", "notes": "Gift"}, {"id": 2, "name": "Walther PDP", "manufacturer": "Walther", "type": "Handgun", "caliber": "9mm", "serial": "FDT9191", "purchaseDate": "", "purchasePrice": 700, "purchasedFrom": "", "condition": "New", "roundCount": 0, "status": "active", "notes": ""}, {"id": 3, "name": "Sig P365X", "manufacturer": "Sig Sauer", "type": "Handgun", "caliber": "9mm", "serial": "66H056591", "purchaseDate": "", "purchasePrice": 649.99, "purchasedFrom": "Academy", "condition": "New", "roundCount": 130, "status": "active", "notes": ""}, {"id": 4, "name": "SAR9", "manufacturer": "SAR USA", "type": "Handgun", "caliber": "9mm", "serial": "", "purchaseDate": "", "purchasePrice": 0, "purchasedFrom": "", "condition": "New", "roundCount": 0, "status": "stored", "notes": "Son's gun (kept here)"}, {"id": 5, "name": "Walther PPK/S", "manufacturer": "Walther", "type": "Handgun", "caliber": ".380 ACP", "serial": "AB171461", "purchaseDate": "", "purchasePrice": 999.99, "purchasedFrom": "Academy", "condition": "New", "roundCount": 0, "status": "active", "notes": ""}, {"id": 6, "name": "Winchester Model 70", "manufacturer": "Winchester", "type": "Rifle", "caliber": ".308 Win", "serial": "", "purchaseDate": "", "purchasePrice": 1900, "purchasedFrom": "Texas Gun Club", "condition": "New", "roundCount": 0, "status": "active", "notes": "Leupold VX-Freedom 4-12x50"}, {"id": 7, "name": "Heritage Rough Rider", "manufacturer": "Heritage", "type": "Handgun", "caliber": ".22 LR / .22 WMR", "serial": "3RR050387", "purchaseDate": "2026-07-06", "purchasePrice": 179.99, "purchasedFrom": "Academy", "condition": "New", "roundCount": 0, "status": "active", "notes": "Single-action revolver, dual cylinders"}, {"id": 8, "name": "SilencerCo Omega 300 DTM", "manufacturer": "SilencerCo", "type": "Suppressor", "caliber": ".308", "serial": "OMG-164714", "purchaseDate": "2026-06-26", "purchasePrice": 757.7, "purchasedFrom": "Texas Gun Club", "condition": "New", "roundCount": 0, "status": "nfa", "notes": "Host: Winchester Model 70. Form 4 filed."}], "ammo": [{"id": 1, "caliber": ".22 LR", "onHand": 1400, "threshold": 500, "costPerRd": 0.08, "use": "Plinking, target, small game"}, {"id": 2, "caliber": "9mm Luger", "onHand": 1322, "threshold": 500, "costPerRd": 0.22, "use": "Self-defense, duty, target"}, {"id": 3, "caliber": ".45 ACP", "onHand": 575, "threshold": 200, "costPerRd": 0.4, "use": "Self-defense, target"}, {"id": 4, "caliber": ".38 Special", "onHand": 356, "threshold": 200, "costPerRd": 0.35, "use": "Target, self-defense, carry"}, {"id": 5, "caliber": ".45 Colt", "onHand": 350, "threshold": 100, "costPerRd": 0.8, "use": "Cowboy action, hunting"}, {"id": 6, "caliber": ".44-40 Win", "onHand": 286, "threshold": 100, "costPerRd": 1.5, "use": "Cowboy action, vintage"}, {"id": 7, "caliber": ".357 Sig", "onHand": 250, "threshold": 100, "costPerRd": 0.5, "use": "Duty, barrier penetration"}, {"id": 8, "caliber": ".40 S&W", "onHand": 161, "threshold": 100, "costPerRd": 0.35, "use": "Duty, self-defense"}, {"id": 9, "caliber": ".22 Win Mag", "onHand": 154, "threshold": 100, "costPerRd": 0.25, "use": "Small game, varmint"}, {"id": 10, "caliber": ".22 CB Long", "onHand": 100, "threshold": 50, "costPerRd": 0.15, "use": "Ultra-quiet pests"}, {"id": 11, "caliber": ".22 WRF", "onHand": 100, "threshold": 50, "costPerRd": 0.3, "use": "Small game (obsolete)"}, {"id": 12, "caliber": "28 Gauge", "onHand": 100, "threshold": 50, "costPerRd": 0.8, "use": "Upland birds"}, {"id": 13, "caliber": "5.56 NATO/.223", "onHand": 88, "threshold": 200, "costPerRd": 0.35, "use": "Target, varmint, defense"}, {"id": 14, "caliber": "12 Gauge", "onHand": 60, "threshold": 50, "costPerRd": 0.5, "use": "All-purpose"}, {"id": 15, "caliber": ".22 Short", "onHand": 50, "threshold": 50, "costPerRd": 0.1, "use": "Plinking, pests"}, {"id": 16, "caliber": ".38 S&W", "onHand": 50, "threshold": 50, "costPerRd": 1.0, "use": "Vintage revolvers"}, {"id": 17, "caliber": "16 Gauge", "onHand": 50, "threshold": 25, "costPerRd": 0.8, "use": "Upland, waterfowl"}, {"id": 18, "caliber": ".32 S&W Long", "onHand": 44, "threshold": 50, "costPerRd": 0.6, "use": "Target, vintage"}, {"id": 19, "caliber": ".32-40 Win", "onHand": 40, "threshold": 50, "costPerRd": 2.5, "use": "Vintage, cowboy, target"}, {"id": 20, "caliber": ".41 Rem Mag", "onHand": 33, "threshold": 50, "costPerRd": 1.5, "use": "Hunting, silhouette"}, {"id": 21, "caliber": ".257 Roberts", "onHand": 33, "threshold": 50, "costPerRd": 1.6, "use": "Deer, all-around"}, {"id": 22, "caliber": ".45-70 Gov't", "onHand": 31, "threshold": 50, "costPerRd": 1.5, "use": "Big game, lever guns"}, {"id": 23, "caliber": ".308 Win", "onHand": 30, "threshold": 100, "costPerRd": 0.8, "use": "Target, hunting, sniper"}, {"id": 24, "caliber": ".357 Magnum", "onHand": 25, "threshold": 100, "costPerRd": 0.8, "use": "Self-defense, hunting"}, {"id": 25, "caliber": ".410 Bore", "onHand": 25, "threshold": 50, "costPerRd": 0.6, "use": "Birds, pests, Judge"}, {"id": 26, "caliber": ".30-06", "onHand": 18, "threshold": 50, "costPerRd": 1.0, "use": "Big game, all-around"}, {"id": 27, "caliber": ".32 Win Spl", "onHand": 16, "threshold": 50, "costPerRd": 1.4, "use": "Deer (vintage lever)"}, {"id": 28, "caliber": ".270 Win", "onHand": 4, "threshold": 50, "costPerRd": 1.5, "use": "Deer, elk"}, {"id": 29, "caliber": ".380 ACP", "onHand": 0, "threshold": 100, "costPerRd": 0.35, "use": "Self-defense, carry"}], "sessions": [{"id": 1, "date": "2026-07-11", "location": "Texas Gun Club", "firearm": "Sig P365X", "drill": "Fun Shoot", "rounds": 130, "caliber": "9mm", "notes": "S&W Range Day. No drills, just having fun."}, {"id": 2, "date": "2026-07-11", "location": "Texas Gun Club", "firearm": "Walther P22", "drill": "Fun Shoot", "rounds": 50, "caliber": ".22 LR", "notes": "S&W Range Day."}, {"id": 3, "date": "2026-07-11", "location": "Texas Gun Club", "firearm": "S&W M&P 2.0 10mm (Demo)", "drill": "Demo/Rental", "rounds": 10, "caliber": "10mm Auto", "notes": "Range ammo. Top port exhaust helps control upward kick drift."}, {"id": 4, "date": "2026-07-11", "location": "Texas Gun Club", "firearm": "S&W SW1911TA (Demo)", "drill": "Demo/Rental", "rounds": 5, "caliber": ".45 ACP", "notes": "Range ammo. Beautiful gun. The .45 ACP roars out of the 1911 platform."}, {"id": 5, "date": "2026-07-10", "location": "Texas Gun Club", "firearm": "Walther P22", "drill": "Function Test", "rounds": 50, "caliber": ".22 LR", "notes": "Tested end piece (came loose again). Picked up .308 suppressor."}], "nfa": [{"id": 1, "item": "SilencerCo Omega 300 DTM", "serial": "OMG-164714", "type": "Suppressor", "formFiled": "2026-06-26", "status": "pending", "host": "Winchester Model 70 (.308 Win)", "notes": "Form 4 filed. $0 tax stamp (2026 law change)."}]};
+
+let memoryStore = null;
+
+function loadData() {
+  try {
+    const stored = localStorage.getItem('arsenalTracker');
+    if (stored) return JSON.parse(stored);
+    localStorage.setItem('arsenalTracker', JSON.stringify(DEFAULT_DATA));
+    return JSON.parse(JSON.stringify(DEFAULT_DATA));
+  } catch (e) {
+    memoryStore = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    return memoryStore;
+  }
+}
+
+function saveData(data) {
+  try {
+    localStorage.setItem('arsenalTracker', JSON.stringify(data));
+  } catch (e) {
+    memoryStore = data;
+  }
+}
+
+function getNextId(arr) {
+  return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1;
+}
+
+let db = loadData();
+
+// ========== NAVIGATION ==========
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(name.substring(0,4))) t.classList.add('active');
+  });
+  render();
+}
+
+// ========== RENDER FUNCTIONS ==========
+function render() {
+  renderKPIs();
+  renderDashFirearms();
+  renderDashAmmo();
+  renderDashActivity();
+  renderDashAlerts();
+  renderFirearmsTable();
+  renderAmmoTable();
+  renderRangeTable();
+  renderNFAList();
+}
+
+function renderKPIs() {
+  const firearms = db.firearms.filter(f => f.type !== 'Suppressor');
+  const nfaCount = db.firearms.filter(f => f.status === 'nfa' || f.type === 'Suppressor').length;
+  const totalRounds = db.ammo.reduce((s, a) => s + a.onHand, 0);
+  const calibers = db.ammo.filter(a => a.onHand > 0).length;
+  const sessions = db.sessions.length;
+  const roundsFired = db.sessions.reduce((s, r) => s + (r.rounds || 0), 0);
+  const value = db.firearms.reduce((s, f) => s + (f.purchasePrice || 0), 0);
+
+  document.getElementById('kpi-cards').innerHTML = `
+    <div class="kpi-card gold"><div class="kpi-icon"><i class="fa-solid fa-gun"></i></div>
+      <div class="kpi-label">Firearms</div><div class="kpi-value">${firearms.length}</div>
+      <div class="kpi-sub">${nfaCount ? '+ ' + nfaCount + ' NFA item' + (nfaCount > 1 ? 's' : '') : 'No NFA items'}</div></div>
+    <div class="kpi-card blue"><div class="kpi-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+      <div class="kpi-label">Rounds On Hand</div><div class="kpi-value">${totalRounds.toLocaleString()}</div>
+      <div class="kpi-sub">${calibers} calibers stocked</div></div>
+    <div class="kpi-card green"><div class="kpi-icon"><i class="fa-solid fa-bullseye"></i></div>
+      <div class="kpi-label">Range Sessions</div><div class="kpi-value">${sessions}</div>
+      <div class="kpi-sub">${roundsFired.toLocaleString()} rounds fired</div></div>
+    <div class="kpi-card red"><div class="kpi-icon"><i class="fa-solid fa-dollar-sign"></i></div>
+      <div class="kpi-label">Collection Value</div><div class="kpi-value">$${value.toLocaleString()}</div>
+      <div class="kpi-sub">Purchase price</div></div>
+  `;
+}
+
+function renderDashFirearms() {
+  let html = '<table><thead><tr><th>Firearm</th><th>Caliber</th><th>Type</th><th>Status</th></tr></thead><tbody>';
+  db.firearms.slice(0, 7).forEach(f => {
+    const badge = f.status === 'nfa' ? 'badge-yellow' : f.status === 'stored' ? 'badge-gray' : 'badge-green';
+    const label = f.status === 'nfa' ? 'NFA' : f.status === 'stored' ? 'Stored' : 'Active';
+    html += `<tr><td><strong>${f.name}</strong><br><span style="font-size:11px;color:var(--text-muted)">${f.manufacturer}</span></td>
+      <td>${f.caliber}</td><td>${f.type}</td><td><span class="badge ${badge}">${label}</span></td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('dash-firearms').innerHTML = html;
+}
+
+function renderDashAmmo() {
+  const sorted = [...db.ammo].sort((a, b) => b.onHand - a.onHand).slice(0, 8);
+  const max = sorted[0]?.onHand || 1;
+  let html = '';
+  sorted.forEach(a => {
+    const pct = (a.onHand / max * 100).toFixed(0);
+    const color = a.onHand <= a.threshold * 0.5 ? 'var(--danger)' : a.onHand <= a.threshold ? 'var(--warning)' : 'var(--success)';
+    html += `<div class="ammo-row"><div class="ammo-row-top"><span>${a.caliber}</span><span>${a.onHand.toLocaleString()} rds</span></div>
+      <div class="ammo-bar"><div class="ammo-bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+  });
+  const more = db.ammo.filter(a => a.onHand > 0).length - 8;
+  if (more > 0) html += `<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-muted)">+ ${more} more calibers</div>`;
+  document.getElementById('dash-ammo').innerHTML = html;
+}
+
+function renderDashActivity() {
+  const activities = db.sessions.slice(0, 6);
+  let html = '';
+  activities.forEach(s => {
+    html += `<div class="activity-item"><div class="activity-dot range"></div><div>
+      <div class="activity-text">${s.firearm} — ${s.rounds} rds ${s.caliber} (${s.drill || 'Practice'})</div>
+      <div class="activity-date">${s.date} · ${s.location}</div></div></div>`;
+  });
+  document.getElementById('dash-activity').innerHTML = html || '<p style="color:var(--text-muted)">No sessions logged yet.</p>';
+}
+
+function renderDashAlerts() {
+  const low = db.ammo.filter(a => a.onHand < a.threshold).sort((a, b) => a.onHand - b.onHand);
+  if (!low.length) {
+    document.getElementById('dash-alerts').innerHTML = '<div style="padding:20px;text-align:center;color:var(--success)"><i class="fa-solid fa-check-circle"></i> All calibers above threshold</div>';
+    return;
+  }
+  let html = '<table><thead><tr><th>Caliber</th><th>On Hand</th><th>Threshold</th><th>Status</th></tr></thead><tbody>';
+  low.forEach(a => {
+    const badge = a.onHand < a.threshold * 0.5 ? 'badge-red' : 'badge-yellow';
+    const label = a.onHand < a.threshold * 0.5 ? 'Critical' : 'Low';
+    html += `<tr><td><strong>${a.caliber}</strong></td><td style="font-family:monospace">${a.onHand}</td>
+      <td style="font-family:monospace;color:var(--text-muted)">${a.threshold}</td><td><span class="badge ${badge}">${label}</span></td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('dash-alerts').innerHTML = html;
+}
+
+function renderFirearmsTable() {
+  let html = '<table><thead><tr><th>Firearm</th><th>Caliber</th><th>Type</th><th>Serial</th><th>Purchase</th><th>Status</th><th></th></tr></thead><tbody>';
+  db.firearms.forEach(f => {
+    const badge = f.status === 'nfa' ? 'badge-yellow' : f.status === 'stored' ? 'badge-gray' : 'badge-green';
+    const label = f.status === 'nfa' ? 'NFA' : f.status === 'stored' ? 'Stored' : 'Active';
+    const price = f.purchasePrice ? '$' + f.purchasePrice.toLocaleString() : '—';
+    html += `<tr><td><strong>${f.name}</strong><br><span style="font-size:11px;color:var(--text-muted)">${f.manufacturer}</span></td>
+      <td>${f.caliber}</td><td>${f.type}</td><td style="font-family:monospace;font-size:11px">${f.serial || '—'}</td>
+      <td>${price}</td><td><span class="badge ${badge}">${label}</span></td>
+      <td><button class="btn btn-danger" onclick="deleteFirearm(${f.id})" style="padding:4px 8px;font-size:11px"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('firearms-table').innerHTML = html;
+}
+
+function renderAmmoTable() {
+  const sorted = [...db.ammo].sort((a, b) => b.onHand - a.onHand);
+  let html = '<table><thead><tr><th>Caliber</th><th>On Hand</th><th>Threshold</th><th>$/Rd</th><th>Use</th><th>Status</th><th></th></tr></thead><tbody>';
+  sorted.forEach(a => {
+    const color = a.onHand < a.threshold * 0.5 ? 'var(--danger)' : a.onHand < a.threshold ? 'var(--warning)' : 'var(--success)';
+    const badge = a.onHand < a.threshold * 0.5 ? 'badge-red' : a.onHand < a.threshold ? 'badge-yellow' : 'badge-green';
+    const label = a.onHand < a.threshold * 0.5 ? 'Critical' : a.onHand < a.threshold ? 'Low' : 'Good';
+    html += `<tr><td><strong>${a.caliber}</strong></td><td style="font-family:monospace;color:${color}">${a.onHand.toLocaleString()}</td>
+      <td style="font-family:monospace;color:var(--text-muted)">${a.threshold}</td>
+      <td style="font-family:monospace">$${a.costPerRd?.toFixed(2) || '—'}</td>
+      <td style="color:var(--text-secondary);font-size:12px">${a.use || ''}</td>
+      <td><span class="badge ${badge}">${label}</span></td>
+      <td><button class="btn btn-danger" onclick="deleteAmmo(${a.id})" style="padding:4px 8px;font-size:11px"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('ammo-table').innerHTML = html;
+}
+
+function renderRangeTable() {
+  let html = '<table><thead><tr><th>Date</th><th>Location</th><th>Firearm</th><th>Drill</th><th>Rounds</th><th>Caliber</th><th>Notes</th></tr></thead><tbody>';
+  db.sessions.forEach(s => {
+    html += `<tr><td>${s.date}</td><td>${s.location}</td><td><strong>${s.firearm}</strong></td>
+      <td>${s.drill || '—'}</td><td style="font-family:monospace">${s.rounds}</td><td>${s.caliber}</td>
+      <td style="font-size:11px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.notes || ''}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('range-table').innerHTML = html;
+}
+
+function renderNFAList() {
+  if (!db.nfa || !db.nfa.length) {
+    document.getElementById('nfa-list').innerHTML = '<p style="color:var(--text-muted)">No NFA items tracked.</p>';
+    return;
+  }
+  let html = '';
+  db.nfa.forEach(n => {
+    const filed = new Date(n.formFiled);
+    const days = Math.floor((new Date() - filed) / 86400000);
+    html += `<div class="nfa-item"><div class="nfa-info"><h3>${n.item}</h3>
+      <p>S/N: ${n.serial} · Type: ${n.type} · Filed: ${n.formFiled}</p>
+      <p>Host: ${n.host || 'N/A'}</p></div>
+      <div style="text-align:right"><div class="nfa-days">${days}</div><div class="nfa-days-label">days pending</div>
+      <span class="badge badge-yellow" style="margin-top:4px">${n.status === 'approved' ? 'Approved' : 'Pending'}</span></div></div>`;
+  });
+  document.getElementById('nfa-list').innerHTML = html;
+}
+
+// ========== MODALS ==========
+function openModal(type) {
+  const modal = document.getElementById('modal-content');
+  let html = '';
+  
+  if (type === 'firearm') {
+    html = `<h2>Add Firearm</h2>
+      <label>Name/Model *</label><input id="f-name" placeholder="e.g. Sig P365X">
+      <label>Manufacturer</label><input id="f-mfr" placeholder="e.g. Sig Sauer">
+      <label>Type</label><select id="f-type"><option>Handgun</option><option>Rifle</option><option>Shotgun</option><option>Suppressor</option><option>Other</option></select>
+      <label>Caliber *</label><input id="f-cal" placeholder="e.g. 9mm">
+      <label>Serial Number</label><input id="f-serial">
+      <label>Purchase Date</label><input id="f-date" type="date">
+      <label>Purchase Price</label><input id="f-price" type="number" step="0.01" placeholder="0.00">
+      <label>Purchased From</label><input id="f-from" placeholder="e.g. Academy">
+      <label>Condition</label><select id="f-cond"><option>New</option><option>Used</option><option>Refurbished</option></select>
+      <label>Notes</label><textarea id="f-notes"></textarea>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addFirearm()">Add Firearm</button></div>`;
+  } else if (type === 'ammo') {
+    html = `<h2>Add Caliber</h2>
+      <label>Caliber *</label><input id="a-cal" placeholder="e.g. .45 ACP">
+      <label>Rounds On Hand</label><input id="a-qty" type="number" value="0">
+      <label>Low Stock Threshold</label><input id="a-thresh" type="number" value="100">
+      <label>Cost Per Round ($)</label><input id="a-cost" type="number" step="0.01" placeholder="0.00">
+      <label>Primary Use</label><input id="a-use" placeholder="e.g. Self-defense, target">
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addAmmo()">Add Caliber</button></div>`;
+  } else if (type === 'ammo-use') {
+    let opts = db.ammo.map(a => `<option value="${a.id}">${a.caliber} (${a.onHand} on hand)</option>`).join('');
+    html = `<h2>Log Ammo Use</h2>
+      <label>Caliber *</label><select id="u-cal">${opts}</select>
+      <label>Rounds Used *</label><input id="u-qty" type="number" placeholder="50">
+      <label>Brass Saved?</label><input id="u-brass" type="number" value="0" placeholder="0">
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="logAmmoUse()">Log Use</button></div>`;
+  } else if (type === 'session') {
+    html = `<h2>Log Range Session</h2>
+      <label>Date *</label><input id="s-date" type="date" value="${new Date().toISOString().split('T')[0]}">
+      <label>Location *</label><input id="s-loc" placeholder="e.g. Texas Gun Club">
+      <label>Firearm *</label><input id="s-gun" placeholder="e.g. Sig P365X">
+      <label>Drill/Type</label><input id="s-drill" placeholder="e.g. Fun Shoot, Bill Drill">
+      <label>Rounds Fired *</label><input id="s-rds" type="number" placeholder="50">
+      <label>Caliber *</label><input id="s-cal" placeholder="e.g. 9mm">
+      <label>Notes</label><textarea id="s-notes"></textarea>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addSession()">Log Session</button></div>`;
+  } else if (type === 'nfa') {
+    html = `<h2>Add NFA Item</h2>
+      <label>Item Name *</label><input id="n-name" placeholder="e.g. SilencerCo Omega 300">
+      <label>Serial Number *</label><input id="n-serial">
+      <label>Type</label><select id="n-type"><option>Suppressor</option><option>SBR</option><option>SBS</option><option>AOW</option><option>Machine Gun</option><option>Destructive Device</option></select>
+      <label>Form Filed Date *</label><input id="n-date" type="date">
+      <label>Host Firearm</label><input id="n-host" placeholder="e.g. Winchester Model 70">
+      <label>Notes</label><textarea id="n-notes"></textarea>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addNFA()">Add Item</button></div>`;
+  }
+  
+  modal.innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ========== CRUD OPERATIONS ==========
+function addFirearm() {
+  const name = document.getElementById('f-name').value.trim();
+  const cal = document.getElementById('f-cal').value.trim();
+  if (!name || !cal) return alert('Name and Caliber are required.');
+  db.firearms.push({
+    id: getNextId(db.firearms), name, manufacturer: document.getElementById('f-mfr').value.trim(),
+    type: document.getElementById('f-type').value, caliber: cal, serial: document.getElementById('f-serial').value.trim(),
+    purchaseDate: document.getElementById('f-date').value, purchasePrice: parseFloat(document.getElementById('f-price').value) || 0,
+    purchasedFrom: document.getElementById('f-from').value.trim(), condition: document.getElementById('f-cond').value,
+    roundCount: 0, status: 'active', notes: document.getElementById('f-notes').value.trim()
+  });
+  saveData(db); closeModal(); render();
+}
+
+function deleteFirearm(id) {
+  if (!confirm('Delete this firearm?')) return;
+  db.firearms = db.firearms.filter(f => f.id !== id);
+  saveData(db); render();
+}
+
+function addAmmo() {
+  const cal = document.getElementById('a-cal').value.trim();
+  if (!cal) return alert('Caliber is required.');
+  db.ammo.push({
+    id: getNextId(db.ammo), caliber: cal, onHand: parseInt(document.getElementById('a-qty').value) || 0,
+    threshold: parseInt(document.getElementById('a-thresh').value) || 100,
+    costPerRd: parseFloat(document.getElementById('a-cost').value) || 0,
+    use: document.getElementById('a-use').value.trim()
+  });
+  saveData(db); closeModal(); render();
+}
+
+function deleteAmmo(id) {
+  if (!confirm('Delete this caliber?')) return;
+  db.ammo = db.ammo.filter(a => a.id !== id);
+  saveData(db); render();
+}
+
+function logAmmoUse() {
+  const id = parseInt(document.getElementById('u-cal').value);
+  const qty = parseInt(document.getElementById('u-qty').value);
+  if (!qty || qty <= 0) return alert('Enter rounds used.');
+  const ammo = db.ammo.find(a => a.id === id);
+  if (ammo) { ammo.onHand = Math.max(0, ammo.onHand - qty); }
+  saveData(db); closeModal(); render();
+}
+
+function addSession() {
+  const date = document.getElementById('s-date').value;
+  const loc = document.getElementById('s-loc').value.trim();
+  const gun = document.getElementById('s-gun').value.trim();
+  const rds = parseInt(document.getElementById('s-rds').value);
+  const cal = document.getElementById('s-cal').value.trim();
+  if (!date || !loc || !gun || !rds || !cal) return alert('Fill in all required fields.');
+  db.sessions.unshift({
+    id: getNextId(db.sessions), date, location: loc, firearm: gun, drill: document.getElementById('s-drill').value.trim(),
+    rounds: rds, caliber: cal, notes: document.getElementById('s-notes').value.trim()
+  });
+  // Auto-deduct ammo
+  const ammo = db.ammo.find(a => a.caliber.toLowerCase() === cal.toLowerCase());
+  if (ammo) ammo.onHand = Math.max(0, ammo.onHand - rds);
+  saveData(db); closeModal(); render();
+}
+
+function addNFA() {
+  const name = document.getElementById('n-name').value.trim();
+  const serial = document.getElementById('n-serial').value.trim();
+  const date = document.getElementById('n-date').value;
+  if (!name || !serial || !date) return alert('Fill in all required fields.');
+  if (!db.nfa) db.nfa = [];
+  db.nfa.push({
+    id: getNextId(db.nfa), item: name, serial, type: document.getElementById('n-type').value,
+    formFiled: date, status: 'pending', host: document.getElementById('n-host').value.trim(),
+    notes: document.getElementById('n-notes').value.trim()
+  });
+  saveData(db); closeModal(); render();
+}
+
+// ========== IMPORT / EXPORT ==========
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'arsenal_tracker_backup_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (imported.firearms && imported.ammo) {
+        db = imported;
+        saveData(db);
+        render();
+        alert('Data imported successfully!');
+      } else {
+        alert('Invalid file format.');
+      }
+    } catch (err) { alert('Error reading file: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+
+// ========== KEYBOARD SHORTCUT ==========
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ========== INIT ==========
+render();
+</script>
+</body>
+</html>
